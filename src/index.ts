@@ -13,8 +13,9 @@ import { discoverFiles } from "./discovery";
 import { parseMarkdown } from "./parser";
 import { embedImages } from "./images";
 import { wrapInHtml } from "./template";
-import { renderPdf, renderDocx, closeBrowser } from "./renderer";
-import { ConvertOptions } from "./types";
+import { renderPdf, renderDocx, closeBrowser, PAGE_SIZE } from "./renderer";
+import { DEFAULT_MARGIN, assertMarginsFit, parseMargins } from "./margins";
+import { ConvertOptions, Margins } from "./types";
 
 const pkg = require("../package.json");
 
@@ -28,10 +29,24 @@ program
   .option("-f, --format <format>", "Output format: pdf or docx", "pdf")
   .option("-o, --output <dir>", "Output directory")
   .option("-r, --recursive", "Process subfolders recursively", false)
+  .option(
+    "-m, --margin <margin>",
+    'Page margins, CSS-style: "10mm", "10mm 15mm", "10mm 15mm 12mm" or "10mm 15mm 12mm 20mm" (units: mm, cm, in, px)',
+    DEFAULT_MARGIN
+  )
   .action(async (input: string, opts: Record<string, string | boolean>) => {
     const format = opts.format as "pdf" | "docx";
     if (format !== "pdf" && format !== "docx") {
       console.error(`Error: Invalid format "${format}". Use "pdf" or "docx".`);
+      process.exit(1);
+    }
+
+    let margins: Margins;
+    try {
+      margins = parseMargins(opts.margin as string);
+      assertMarginsFit(margins, PAGE_SIZE);
+    } catch (err) {
+      console.error(`Error: ${(err as Error).message}`);
       process.exit(1);
     }
 
@@ -72,9 +87,9 @@ program
           const fullHtml = wrapInHtml(withImages);
 
           if (format === "pdf") {
-            await renderPdf(fullHtml, file.outputPath);
+            await renderPdf(fullHtml, file.outputPath, margins);
           } else {
-            await renderDocx(fullHtml, file.outputPath);
+            await renderDocx(fullHtml, file.outputPath, margins);
           }
 
           console.log(`  Done: ${file.outputPath}`);

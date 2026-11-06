@@ -3,9 +3,13 @@ body {
   font-size: 14px;
   line-height: 1.6;
   color: #24292e;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
+  /* Page margins (--margin) are the only spacing around the content */
+  margin: 0;
+}
+
+/* Keep a leading heading's top margin from adding to the page margin */
+body > :first-child {
+  margin-top: 0;
 }
 
 h1, h2, h3, h4, h5, h6 {
