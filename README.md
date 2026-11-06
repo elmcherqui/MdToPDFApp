@@ -54,6 +54,10 @@ mdtopdf ./docs
 
 # Recursive conversion with custom output directory
 mdtopdf ./docs -r -o ./output
+
+# Custom page margins (default: 10mm on every side)
+mdtopdf ./notes.md --margin 5mm
+mdtopdf ./notes.md --margin "10mm 15mm"
 ```
 
 ### Options
@@ -63,6 +67,7 @@ mdtopdf ./docs -r -o ./output
 | `-f, --format <format>` | Output format: `pdf` or `docx` | `pdf` |
 | `-o, --output <dir>` | Output directory | Same as input |
 | `-r, --recursive` | Process subfolders recursively | `false` |
+| `-m, --margin <margin>` | Page margins for PDF and DOCX (see below) | `10mm` |
 | `-V, --version` | Show version number | |
 | `-h, --help` | Show help | |
 
@@ -81,6 +86,19 @@ graph TD
 
 Diagrams are rendered to SVG using Mermaid v11, bundled locally for fully offline use.
 
+## Page Margins
+
+`--margin` takes 1 to 4 space-separated values, in the same order as CSS `margin`:
+
+| Value | Meaning |
+|---|---|
+| `"10mm"` | all four sides |
+| `"10mm 15mm"` | top/bottom, left/right |
+| `"10mm 15mm 12mm"` | top, left/right, bottom |
+| `"10mm 15mm 12mm 20mm"` | top, right, bottom, left |
+
+Supported units are `mm`, `cm`, `in` and `px` (96px = 1in). A number without a unit is read as millimetres. Quote the value when it contains spaces. Margins that leave no room for content on the page (A4 for PDF, US Letter for DOCX) are rejected before any file is converted.
+
 ## Project Structure
 
 ```
@@ -90,6 +108,7 @@ MdToPDFApp/
 │   ├── discovery.ts    # File discovery and path resolution
 │   ├── parser.ts       # Markdown-to-HTML via markdown-it
 │   ├── images.ts       # Image embedding (local + remote)
+│   ├── margins.ts      # --margin parsing (CSS-style shorthand)
 │   ├── template.ts     # HTML wrapper with styles and mermaid
 │   ├── renderer.ts     # PDF (Puppeteer) and DOCX rendering
 │   └── types.ts        # Shared TypeScript interfaces
