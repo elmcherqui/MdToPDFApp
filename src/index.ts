@@ -13,7 +13,7 @@ import { discoverFiles } from "./discovery";
 import { parseMarkdown } from "./parser";
 import { embedImages } from "./images";
 import { wrapInHtml } from "./template";
-import { renderPdf, renderDocx, closeBrowser, PAGE_SIZES } from "./renderer";
+import { renderPdf, renderDocx, closeBrowser, PAGE_SIZE } from "./renderer";
 import { DEFAULT_MARGIN, assertMarginsFit, parseMargins } from "./margins";
 import { ConvertOptions, Margins } from "./types";
 
@@ -44,7 +44,7 @@ program
     let margins: Margins;
     try {
       margins = parseMargins(opts.margin as string);
-      assertMarginsFit(margins, PAGE_SIZES[format]);
+      assertMarginsFit(margins, PAGE_SIZE);
     } catch (err) {
       console.error(`Error: ${(err as Error).message}`);
       process.exit(1);

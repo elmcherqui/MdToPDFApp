@@ -1,16 +1,14 @@
 import puppeteer, { Browser } from "puppeteer";
 import * as fs from "fs";
 import htmlToDocx = require("html-to-docx");
+import JSZip from "jszip";
 import { Margins, PageSize } from "./types";
 import { DEFAULT_MARGINS } from "./margins";
 
 const TWIPS_PER_MM = 1440 / 25.4;
 
-/** Paper size of each output format: A4 for PDF, html-to-docx's US Letter for DOCX. */
-export const PAGE_SIZES: Record<"pdf" | "docx", PageSize> = {
-  pdf: { width: 210, height: 297 },
-  docx: { width: 215.9, height: 279.4 },
-};
+/** A4, the paper size of both PDF and DOCX output. */
+export const PAGE_SIZE: PageSize = { width: 210, height: 297 };
 
 let browser: Browser | null = null;
 
@@ -65,6 +63,11 @@ export async function renderDocx(
   // html-to-docx replaces a numeric 0 with its default, so zero goes in as "0px"
   const toTwips = (mm: number) => Math.round(mm * TWIPS_PER_MM) || "0px";
   const buffer = await htmlToDocx(html, null, {
+    // html-to-docx defaults to US Letter
+    pageSize: {
+      width: toTwips(PAGE_SIZE.width),
+      height: toTwips(PAGE_SIZE.height),
+    },
     // The library does not merge partial margins with its defaults, so every
     // key is required; a missing one is written as "undefined" and Word
     // refuses to open the file
@@ -82,7 +85,26 @@ export async function renderDocx(
     header: false,
   });
 
-  fs.writeFileSync(outputPath, Buffer.from(buffer));
+  fs.writeFileSync(outputPath, await roundTableColumnWidths(buffer));
+}
+
+/**
+ * html-to-docx splits the text width evenly between table columns without
+ * rounding (e.g. w:w="3590.666"), but OOXML only allows whole twips. Round
+ * down so the columns never add up to more than the text width.
+ */
+async function roundTableColumnWidths(docx: Buffer): Promise<Buffer> {
+  const zip = await JSZip.loadAsync(docx);
+  const documentXml = zip.file("word/document.xml");
+  if (!documentXml) return Buffer.from(docx);
+  const xml = await documentXml.async("string");
+  const rounded = xml.replace(
+    /(<w:gridCol w:w=")(\d+\.\d+)"/g,
+    (_, prefix: string, width: string) => `${prefix}${Math.floor(Number(width))}"`
+  );
+  if (rounded === xml) return Buffer.from(docx);
+  zip.file("word/document.xml", rounded);
+  return zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
 }
 
 export async function closeBrowser(): Promise<void> {

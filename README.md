@@ -97,7 +97,7 @@ Diagrams are rendered to SVG using Mermaid v11, bundled locally for fully offlin
 | `"10mm 15mm 12mm"` | top, left/right, bottom |
 | `"10mm 15mm 12mm 20mm"` | top, right, bottom, left |
 
-Supported units are `mm`, `cm`, `in` and `px` (96px = 1in). A number without a unit is read as millimetres. Quote the value when it contains spaces. Margins that leave no room for content on the page (A4 for PDF, US Letter for DOCX) are rejected before any file is converted.
+Supported units are `mm`, `cm`, `in` and `px` (96px = 1in). A number without a unit is read as millimetres. Quote the value when it contains spaces. Margins that leave no room for content on the A4 page are rejected before any file is converted.
 
 ## Project Structure
 

@@ -4,7 +4,7 @@ import { Margins } from "../src/types";
 import * as fs from "fs";
 import * as path from "path";
 import { pdfMargins, PDF_MARGIN_TOLERANCE_MM } from "./helpers/pdf";
-import { docxPageMargins } from "./helpers/docx";
+import { docxDocumentXml, docxPageMargins, docxPageSize } from "./helpers/docx";
 
 const tmpDir = path.join(__dirname, "tmp-renderer");
 const html = `<!DOCTYPE html><html><body><h1>Hello</h1></body></html>`;
@@ -70,6 +70,31 @@ describe("renderDocx", () => {
     for (const [name, value] of Object.entries(pgMar)) {
       expect(value, name).toMatch(/^\d+$/);
     }
+  }, 30000);
+
+  it("uses A4 paper, like the PDF output", async () => {
+    fs.mkdirSync(tmpDir, { recursive: true });
+    const outputPath = path.join(tmpDir, "a4.docx");
+    await renderDocx(html, outputPath, margins);
+    const pgSz = await docxPageSize(outputPath);
+    // 210 x 297mm in twips
+    expect(pgSz).toMatchObject({ w: "11906", h: "16838" });
+  }, 30000);
+
+  it("writes whole-number table column widths", async () => {
+    // html-to-docx splits the text width evenly between columns without
+    // rounding; OOXML only allows integer twips
+    fs.mkdirSync(tmpDir, { recursive: true });
+    const outputPath = path.join(tmpDir, "table.docx");
+    await renderDocx(
+      `<table><tr><td>a</td><td>b</td><td>c</td></tr></table>`,
+      outputPath,
+      // A4 at 10mm leaves 10772 twips, which does not divide by 3
+      { top: 10, right: 10, bottom: 10, left: 10 }
+    );
+    const xml = await docxDocumentXml(outputPath);
+    expect(xml).toContain("<w:gridCol");
+    expect(xml.match(/w:\w+="\d+\.\d+"/g)).toBeNull();
   }, 30000);
 
   it("keeps zero margins at zero", async () => {
